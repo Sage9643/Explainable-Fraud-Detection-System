@@ -8,8 +8,11 @@ import {
   History,
   Settings,
   Info,
-  ShieldHalf,
 } from "lucide-react";
+
+import { useTheme } from "../../context/ThemeContext";
+import logoLight from "../../assets/branding/logo-light.png";
+import logoDark from "../../assets/branding/logo-dark.png";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -46,15 +49,19 @@ function NavItem({ to, label, icon: Icon, end }) {
 }
 
 export default function Sidebar() {
+  const { theme } = useTheme();
+  const logo = theme === "dark" ? logoDark : logoLight;
   return (
     <aside className="flex h-full w-64 flex-col border-r border-ink-100 bg-surface-light dark:border-ink-700 dark:bg-surface-dark-subtle">
       <div className="flex items-center gap-2 px-5 py-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-500 text-white">
-          <ShieldHalf size={18} strokeWidth={2} />
-        </div>
+        <img
+          src={logo}
+          alt="FraudLens"
+          className="h-11 w-11 object-contain"
+        />
         <div>
-          <p className="text-sm font-semibold leading-tight text-ink-900 dark:text-ink-50">FraudLens AI</p>
-          <p className="text-xs leading-tight text-ink-400">Fraud Intelligence</p>
+          <p className="text-sm font-semibold leading-tight text-ink-900 dark:text-ink-50">FraudLens</p>
+          <p className="text-xs leading-tight text-ink-400">Explainable Fraud AI</p>
         </div>
       </div>
 
