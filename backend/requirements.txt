@@ -1,0 +1,14 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+sqlalchemy==2.0.36
+
+# ML artifacts (frozen model was trained with these - kept in lockstep
+# with metadata.json["library_versions"])
+xgboost==3.3.0
+scikit-learn==1.6.1
+shap==0.52.0
+joblib==1.4.2
+numpy==2.0.2
+pandas==2.2.2

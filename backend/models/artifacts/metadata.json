@@ -1,0 +1,147 @@
+{
+  "model_name": "FraudLens-XGBoost-Final",
+  "model_version": "3.0.0",
+  "algorithm": "XGBClassifier",
+  "training_date_utc": "2026-07-14T18:07:22.125214+00:00",
+  "random_seed": 42,
+  "optimization_objective": "F2-score (recall-weighted); primary business metric is recall",
+  "imbalance_strategy": "scale_pos_weight",
+  "hyperparameters": {
+    "max_depth": 4,
+    "learning_rate": 0.1,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "n_estimators": 338
+  },
+  "decision_threshold": 0.5039991736412048,
+  "risk_bands": {
+    "low_max": 0.1,
+    "medium_max": 0.5039991736412048,
+    "high_max": 0.85,
+    "actions": {
+      "Low": "Approve",
+      "Medium": "Request OTP / step-up authentication",
+      "High": "Manual review",
+      "Critical": "Block transaction"
+    }
+  },
+  "model_selection": {
+    "cv_folds": 3,
+    "strategy_comparison": [
+      {
+        "strategy": "scale_pos_weight",
+        "mean_f2": 0.8256056404187095,
+        "mean_recall": 0.8122445832369497,
+        "mean_precision": 0.8848603622878334
+      },
+      {
+        "strategy": "smote",
+        "mean_f2": 0.7929527160296391,
+        "mean_recall": 0.8274732053358007,
+        "mean_precision": 0.683485381882912
+      }
+    ],
+    "hyperparameter_grid_results": [
+      {
+        "max_depth": 4,
+        "learning_rate": 0.1,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "mean_f2": 0.8265683577352446
+      },
+      {
+        "max_depth": 8,
+        "learning_rate": 0.05,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "mean_f2": 0.8263010899590005
+      },
+      {
+        "max_depth": 6,
+        "learning_rate": 0.1,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "mean_f2": 0.8241246441438319
+      },
+      {
+        "max_depth": 6,
+        "learning_rate": 0.05,
+        "subsample": 1.0,
+        "colsample_bytree": 1.0,
+        "mean_f2": 0.8136451184638172
+      }
+    ]
+  },
+  "dataset": {
+    "source_file": "/content/creditcard.csv",
+    "total_rows": 284807,
+    "fraud_rate_pct": 0.172749,
+    "train_rows": 227845,
+    "test_rows": 56962,
+    "train_rows_after_resampling": 227845
+  },
+  "preprocessing_summary": {
+    "dropped_columns": [
+      "Time"
+    ],
+    "scaled_columns": [
+      "Amount"
+    ],
+    "scaling_method": "StandardScaler"
+  },
+  "feature_count": 29,
+  "feature_order": [
+    "V1",
+    "V2",
+    "V3",
+    "V4",
+    "V5",
+    "V6",
+    "V7",
+    "V8",
+    "V9",
+    "V10",
+    "V11",
+    "V12",
+    "V13",
+    "V14",
+    "V15",
+    "V16",
+    "V17",
+    "V18",
+    "V19",
+    "V20",
+    "V21",
+    "V22",
+    "V23",
+    "V24",
+    "V25",
+    "V26",
+    "V27",
+    "V28",
+    "Amount_scaled"
+  ],
+  "evaluation_metrics": {
+    "test_auc": 0.980421,
+    "test_avg_precision": 0.879425,
+    "test_precision": 0.823529,
+    "test_recall": 0.857143,
+    "test_f1": 0.84,
+    "test_f2": 0.850202,
+    "risk_band_fraud_rates": {
+      "Low": 0.00019356655169986626,
+      "Medium": 0.09375,
+      "High": 0.36363636363636365,
+      "Critical": 0.8791208791208791
+    }
+  },
+  "library_versions": {
+    "python": "3.12.13",
+    "xgboost": "3.3.0",
+    "scikit_learn": "1.6.1",
+    "shap": "0.52.0",
+    "imbalanced_learn": "0.14.2",
+    "pandas": "2.2.2",
+    "numpy": "2.0.2"
+  }
+}

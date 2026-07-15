@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-surface-subtle text-ink-800 antialiased;
+  @apply dark:bg-surface-dark dark:text-ink-100;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Visible keyboard focus everywhere - not optional in an enterprise tool */
+:focus-visible {
+  outline: 2px solid theme("colors.brand.500");
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.card {
+  @apply rounded-card border border-ink-100 bg-surface-light shadow-card;
+  @apply dark:border-ink-700 dark:bg-surface-dark-subtle;
+}
