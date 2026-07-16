@@ -1,14 +1,15 @@
 """
 Database connection setup.
 
-Sprint 1 scope: initialize the SQLAlchemy engine and confirm connectivity
-only. The prediction_history table is intentionally NOT created here - that
-belongs to the sprint that implements history persistence.
+Uses Python's built-in sqlite3 module directly - no ORM. Initializes the
+connection helper, confirms connectivity, and ensures the prediction_history
+table exists (idempotent - CREATE TABLE IF NOT EXISTS). No migration tool is
+introduced at this project's scale; schema changes are additive and applied
+here directly.
 """
 from __future__ import annotations
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+import sqlite3
 
 from utils.config import get_settings
 from utils.exceptions import DatabaseNotAvailableError
@@ -18,30 +19,70 @@ logger = get_logger(__name__)
 
 settings = get_settings()
 
-# check_same_thread=False is required for SQLite when the connection is
-# shared across FastAPI's async request handlers.
-_connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
 
-engine = create_engine(settings.database_url, connect_args=_connect_args)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+def _resolve_db_path(database_url: str) -> str:
+    """Converts a sqlite:/// URL (as used in .env for consistency with other
+    config values) into a plain filesystem path for sqlite3.connect()."""
+    prefix = "sqlite:///"
+    if database_url.startswith(prefix):
+        return database_url[len(prefix):]
+    return database_url
+
+
+DB_PATH = _resolve_db_path(settings.database_url)
+
+CREATE_PREDICTION_HISTORY_TABLE = """
+CREATE TABLE IF NOT EXISTS prediction_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT NOT NULL,
+    prediction TEXT NOT NULL,
+    fraud_probability REAL NOT NULL,
+    risk_band TEXT NOT NULL,
+    confidence REAL NOT NULL,
+    recommended_action TEXT NOT NULL,
+    model_version TEXT NOT NULL,
+    features_json TEXT NOT NULL
+);
+"""
+
+CREATE_INDEXES = (
+    "CREATE INDEX IF NOT EXISTS ix_prediction_history_timestamp ON prediction_history (timestamp);",
+    "CREATE INDEX IF NOT EXISTS ix_prediction_history_risk_band ON prediction_history (risk_band);",
+)
+
+
+def get_connection() -> sqlite3.Connection:
+    """Returns a new sqlite3 connection with row access by column name.
+    Callers are responsible for closing the connection (use try/finally)."""
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
 def init_db() -> None:
-    """Verifies the database is reachable. Called once at startup."""
+    """Verifies the database is reachable and ensures all tables/indexes
+    exist. Called once at startup."""
     try:
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
-        logger.info("Database initialized: %s", settings.database_url)
+        conn = get_connection()
+        try:
+            conn.execute("SELECT 1")
+            conn.execute(CREATE_PREDICTION_HISTORY_TABLE)
+            for statement in CREATE_INDEXES:
+                conn.execute(statement)
+            conn.commit()
+        finally:
+            conn.close()
+        logger.info("Database initialized: %s", DB_PATH)
     except Exception as exc:  # noqa: BLE001
         raise DatabaseNotAvailableError(f"Could not connect to database: {exc}") from exc
 
 
 def get_db():
-    """FastAPI dependency that yields a scoped DB session per request.
-    Not used by any route yet in Sprint 1 - provided so future sprints can
-    depend on it without touching this file again."""
-    db = SessionLocal()
+    """FastAPI dependency that yields a raw sqlite3 connection per request.
+    Not required by any route yet - provided so future sprints can depend
+    on it without touching this file again."""
+    conn = get_connection()
     try:
-        yield db
+        yield conn
     finally:
-        db.close()
+        conn.close()

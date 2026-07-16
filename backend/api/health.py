@@ -11,10 +11,9 @@ import time
 
 from fastapi import APIRouter, Request
 
-from database.db import engine
+from database.db import get_connection
 from schemas.health import HealthResponse
 from services.model_service import model_service
-from sqlalchemy import text
 
 router = APIRouter(tags=["health"])
 
@@ -29,8 +28,11 @@ def _format_uptime(seconds: float) -> str:
 
 def _check_database() -> bool:
     try:
-        with engine.connect() as connection:
-            connection.execute(text("SELECT 1"))
+        conn = get_connection()
+        try:
+            conn.execute("SELECT 1")
+        finally:
+            conn.close()
         return True
     except Exception:  # noqa: BLE001
         return False

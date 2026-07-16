@@ -24,6 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.explainability import router as explainability_router
 from api.dashboard import router as dashboard_router
 from api.health import router as health_router
+from api.history import router as history_router
 from api.prediction import router as prediction_router
 from database.db import init_db
 from services.model_service import model_service
@@ -76,11 +77,10 @@ def create_app() -> FastAPI:
     app.include_router(prediction_router)
     app.include_router(explainability_router)
     app.include_router(dashboard_router)
+    app.include_router(history_router)
     # Future sprints register additional routers here, e.g.:
     # app.include_router(batch_router)
     # app.include_router(analytics_router)
-    # app.include_router(history_router)
-
 
     return app
 

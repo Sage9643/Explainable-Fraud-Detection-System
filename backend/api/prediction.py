@@ -3,14 +3,16 @@ Prediction endpoint.
 
 Route contains no ML logic: it validates the request via Pydantic, calls
 prediction_service for the probability, calls risk_service to translate that
-probability into a business decision, and returns the response. No pandas /
-sklearn / xgboost imports here.
+probability into a business decision, persists the result via
+history_service, and returns the response. No pandas / sklearn / xgboost
+imports here.
 """
 from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
 from schemas.prediction import PredictionResponse, TransactionRequest
+from services.history_service import record_prediction
 from services.model_service import model_service
 from services.prediction_service import predict_fraud_probability
 from services.risk_service import classify_risk
@@ -27,6 +29,18 @@ def predict_transaction(transaction: TransactionRequest, request: Request) -> Pr
 
     threshold = metadata["decision_threshold"]
     prediction_label = "Fraudulent" if probability >= threshold else "Legitimate"
+    model_version = model_service.get_model_version()
+
+    # Persist only after the prediction has succeeded. A history-write
+    # failure is logged internally and never affects this response.
+    record_prediction(
+        prediction=prediction_label,
+        fraud_probability=probability,
+        risk_band=risk.risk_band,
+        recommended_action=risk.recommended_action,
+        model_version=model_version,
+        features=transaction.model_dump(),
+    )
 
     return PredictionResponse(
         prediction=prediction_label,
@@ -34,6 +48,6 @@ def predict_transaction(transaction: TransactionRequest, request: Request) -> Pr
         risk_band=risk.risk_band,
         recommended_action=risk.recommended_action,
         decision_threshold=threshold,
-        model_version=model_service.get_model_version(),
+        model_version=model_version,
         request_id=request.state.request_id,
     )
