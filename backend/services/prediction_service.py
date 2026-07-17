@@ -13,6 +13,7 @@ Preprocessing here must mirror training exactly:
 """
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 from schemas.prediction import TransactionRequest
@@ -44,3 +45,39 @@ def predict_fraud_probability(transaction: TransactionRequest, model_service: Mo
     row = preprocess_transaction(transaction, model_service)
     probability = float(model.predict_proba(row)[:, 1][0])
     return probability
+
+
+def preprocess_transactions(features_df: pd.DataFrame, model_service: ModelService) -> pd.DataFrame:
+    """Vectorized counterpart to preprocess_transaction: applies the identical
+    three preprocessing steps (scale Amount with the fitted scaler, drop raw
+    Amount, reindex to feature_columns.json order) to an entire DataFrame of
+    transactions at once, instead of one row at a time.
+
+    This is the same transformation as preprocess_transaction - same scaler
+    object, same feature_columns, same reindex step - generalized to N rows.
+    It exists so batch scoring can call the scaler and model once each
+    instead of once per row, which is what makes scoring the full ~285k-row
+    Kaggle dataset practical.
+    """
+    scaler = model_service.get_scaler()
+    feature_columns = model_service.get_feature_columns()
+
+    working = features_df.copy()
+    working["Amount_scaled"] = scaler.transform(working[["Amount"]])
+    working = working.drop(columns=["Amount"])
+    working = working[feature_columns]
+    return working
+
+
+def predict_fraud_probabilities(features_df: pd.DataFrame, model_service: ModelService) -> np.ndarray:
+    """Vectorized counterpart to predict_fraud_probability: scores an entire
+    DataFrame of transactions with a single model.predict_proba() call
+    instead of one call per row. Produces numerically identical results to
+    calling predict_fraud_probability() once per row, in the same row order,
+    because it uses the same fitted scaler and the same trained model - only
+    the number of rows passed to each call differs.
+    """
+    model = model_service.get_model()
+    processed = preprocess_transactions(features_df, model_service)
+    probabilities = model.predict_proba(processed)[:, 1]
+    return probabilities

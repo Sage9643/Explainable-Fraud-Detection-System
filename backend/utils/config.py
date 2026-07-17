@@ -33,8 +33,10 @@ class Settings(BaseSettings):
     # --- CORS ---
     cors_origins: str = "http://localhost:5173"
 
-    # --- Batch (reserved for a future sprint; declared now so .env stays stable) ---
-    max_batch_rows: int = 50_000
+    # --- Batch prediction ---
+    max_batch_rows: int = 5_000_000
+    max_upload_size_mb: int = 1400
+    batch_output_dir: str = "generated/batch_results"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -61,6 +63,14 @@ class Settings(BaseSettings):
     @property
     def feature_columns_path(self) -> Path:
         return self.model_artifacts_path / self.feature_columns_filename
+
+    @property
+    def batch_output_path(self) -> Path:
+        return Path(self.batch_output_dir)
+
+    @property
+    def max_upload_size_bytes(self) -> int:
+        return self.max_upload_size_mb * 1024 * 1024
 
 
 @lru_cache

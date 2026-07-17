@@ -43,3 +43,22 @@ temp/
 
 # IDE
 .idea/
+
+# --- Backend ---
+backend/.env
+backend/fraudlens.db
+backend/generated/
+backend/generated/batch_results/
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+
+# --- Frontend ---
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# --- OS / editor ---
+.DS_Store
+.vscode/
+.idea/

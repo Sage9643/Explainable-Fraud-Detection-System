@@ -45,9 +45,23 @@ CREATE TABLE IF NOT EXISTS prediction_history (
 );
 """
 
+CREATE_BATCH_JOBS_TABLE = """
+CREATE TABLE IF NOT EXISTS batch_jobs (
+    batch_id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    rows_scored INTEGER NOT NULL,
+    fraud_count INTEGER NOT NULL,
+    fraud_rate REAL NOT NULL,
+    processing_time_ms INTEGER NOT NULL,
+    risk_distribution_json TEXT NOT NULL
+);
+"""
+
 CREATE_INDEXES = (
     "CREATE INDEX IF NOT EXISTS ix_prediction_history_timestamp ON prediction_history (timestamp);",
     "CREATE INDEX IF NOT EXISTS ix_prediction_history_risk_band ON prediction_history (risk_band);",
+    "CREATE INDEX IF NOT EXISTS ix_batch_jobs_created_at ON batch_jobs (created_at);",
 )
 
 
@@ -67,6 +81,7 @@ def init_db() -> None:
         try:
             conn.execute("SELECT 1")
             conn.execute(CREATE_PREDICTION_HISTORY_TABLE)
+            conn.execute(CREATE_BATCH_JOBS_TABLE)
             for statement in CREATE_INDEXES:
                 conn.execute(statement)
             conn.commit()
@@ -75,14 +90,3 @@ def init_db() -> None:
         logger.info("Database initialized: %s", DB_PATH)
     except Exception as exc:  # noqa: BLE001
         raise DatabaseNotAvailableError(f"Could not connect to database: {exc}") from exc
-
-
-def get_db():
-    """FastAPI dependency that yields a raw sqlite3 connection per request.
-    Not required by any route yet - provided so future sprints can depend
-    on it without touching this file again."""
-    conn = get_connection()
-    try:
-        yield conn
-    finally:
-        conn.close()
