@@ -10,8 +10,8 @@ Sprint 1 scope: application foundation only.
   - Registers global exception handlers
   - Exposes GET /api/health
 
-No analytics routes are registered yet - those are added in a later sprint
-and simply need `app.include_router(...)` added below.
+No production-hardening routes (background jobs, batch performance work) are
+part of this file's scope - see the Sprint 10 backlog.
 """
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.analytics import router as analytics_router
 from api.batch import router as batch_router
 from api.explainability import router as explainability_router
 from api.dashboard import router as dashboard_router
@@ -79,8 +80,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard_router)
     app.include_router(history_router)
     app.include_router(batch_router)
-    # Future sprints register additional routers here, e.g.:
-    # app.include_router(analytics_router)
+    app.include_router(analytics_router)
 
     return app
 
