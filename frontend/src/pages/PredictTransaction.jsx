@@ -4,11 +4,14 @@ import { ScanSearch, Lightbulb, RotateCcw } from "lucide-react";
 import TransactionForm from "../components/forms/TransactionForm.jsx";
 import RiskBadge from "../components/tables/RiskBadge.jsx";
 import ErrorState from "../components/feedback/ErrorState.jsx";
+import { SkeletonResultCard } from "../components/feedback/Skeleton.jsx";
 import { usePredict } from "../hooks/usePredict.js";
+import { useToast } from "../context/ToastContext.jsx";
 import { formatPercent } from "../utils/formatters.js";
 
 export default function PredictTransaction() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { result, loading, error, predict, reset } = usePredict();
   const [lastTransaction, setLastTransaction] = useState(null);
 
@@ -19,7 +22,12 @@ export default function PredictTransaction() {
 
   async function handleSubmit(transaction) {
     setLastTransaction(transaction);
-    await predict(transaction);
+    const data = await predict(transaction);
+    if (data) {
+      showToast(`Prediction complete: ${data.risk_band} risk`, "success");
+    } else {
+      showToast("Prediction failed. Please try again.", "error");
+    }
   }
 
   function handleReset() {
@@ -32,7 +40,7 @@ export default function PredictTransaction() {
       <div className="card p-6">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-50 text-brand-600 dark:bg-brand-700/20 dark:text-brand-400">
-            <ScanSearch size={18} />
+            <ScanSearch size={18} aria-hidden="true" />
           </div>
           <div>
             <h2 className="text-sm font-semibold text-ink-900 dark:text-ink-50">Transaction Details</h2>
@@ -45,9 +53,11 @@ export default function PredictTransaction() {
         <TransactionForm onSubmit={handleSubmit} submitLabel="Predict" loading={loading} />
       </div>
 
-      {error && <ErrorState message={error} />}
+      {loading && !result && <SkeletonResultCard />}
 
-      {result && (
+      {!loading && error && <ErrorState message={error} onRetry={() => lastTransaction && handleSubmit(lastTransaction)} />}
+
+      {!loading && result && (
         <div className="card p-6">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-ink-900 dark:text-ink-50">Prediction Result</h3>
@@ -55,16 +65,16 @@ export default function PredictTransaction() {
               <button
                 type="button"
                 onClick={handleExplain}
-                className="flex items-center gap-1.5 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
+                className="flex items-center gap-1.5 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
               >
-                <Lightbulb size={13} /> Explain this Prediction
+                <Lightbulb size={13} aria-hidden="true" /> Explain this Prediction
               </button>
               <button
                 type="button"
                 onClick={handleReset}
-                className="flex items-center gap-1.5 rounded-md border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-50 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800"
+                className="flex items-center gap-1.5 rounded-md border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800"
               >
-                <RotateCcw size={13} /> Clear
+                <RotateCcw size={13} aria-hidden="true" /> Clear
               </button>
             </div>
           </div>

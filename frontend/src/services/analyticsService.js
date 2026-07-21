@@ -6,7 +6,7 @@ import api from "./api.js";
  * the hook/page. GET /api/analytics takes no parameters: it's a single
  * static snapshot of the frozen model, not a filterable/paginated resource.
  */
-export async function fetchAnalytics() {
-  const response = await api.get("/api/analytics");
+export async function fetchAnalytics(signal) {
+  const response = await api.get("/api/analytics", { signal });
   return response.data;
 }

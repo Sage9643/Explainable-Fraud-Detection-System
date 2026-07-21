@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./fraudlens.db"
 
     # --- CORS ---
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:5173,http://localhost:5174"
 
     # --- Batch prediction ---
     max_batch_rows: int = 5_000_000

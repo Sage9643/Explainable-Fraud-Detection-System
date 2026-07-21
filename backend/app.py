@@ -55,6 +55,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    print("CORS Origins:", settings.cors_origins_list)
 
     app = FastAPI(
         title=settings.app_name,

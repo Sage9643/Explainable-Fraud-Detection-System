@@ -5,7 +5,7 @@ import api from "./api.js";
  * generic axios instance in api.js so the Dashboard page/hook never needs
  * to know the endpoint path directly.
  */
-export async function fetchDashboardStats() {
-  const response = await api.get("/api/dashboard");
+export async function fetchDashboardStats(signal) {
+  const response = await api.get("/api/dashboard", { signal });
   return response.data;
 }

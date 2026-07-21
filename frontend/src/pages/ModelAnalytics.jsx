@@ -2,8 +2,8 @@ import { Target, CheckCircle2, Crosshair, Gauge, Database, Info } from "lucide-r
 import StatCard from "../components/cards/StatCard.jsx";
 import DataTable from "../components/tables/DataTable.jsx";
 import RiskBadge from "../components/tables/RiskBadge.jsx";
-import LoadingState from "../components/feedback/LoadingState.jsx";
 import ErrorState from "../components/feedback/ErrorState.jsx";
+import { SkeletonModelInfoCard, SkeletonStatGrid, SkeletonChart, SkeletonTable } from "../components/feedback/Skeleton.jsx";
 import ROCCurveChart from "../charts/ROCCurveChart.jsx";
 import PRCurveChart from "../charts/PRCurveChart.jsx";
 import ConfusionMatrixChart from "../charts/ConfusionMatrixChart.jsx";
@@ -17,10 +17,28 @@ const RISK_BAND_FRAUD_RATE_COLUMNS = [
 ];
 
 export default function ModelAnalytics() {
-  const { data, loading, error } = useAnalytics();
+  const { data, loading, error, refetch } = useAnalytics();
 
-  if (loading) return <LoadingState label="Loading model analytics…" />;
-  if (error) return <ErrorState message={error} />;
+  if (loading) {
+    return (
+      <div role="status" aria-label="Loading model analytics" className="space-y-6">
+        <span className="sr-only">Loading model analytics…</span>
+        <SkeletonModelInfoCard />
+        <SkeletonStatGrid count={4} />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <SkeletonChart />
+          <SkeletonChart />
+        </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <SkeletonChart heightClass="h-56" />
+          <SkeletonChart heightClass="h-80" />
+        </div>
+        <SkeletonTable rows={4} />
+      </div>
+    );
+  }
+
+  if (error) return <ErrorState message={error} onRetry={refetch} />;
   if (!data) return null;
 
   const { model_info, evaluation_metrics, risk_band_fraud_rates, confusion_matrix, roc_curve, pr_curve, feature_importance, dataset_info } = data;

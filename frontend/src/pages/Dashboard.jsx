@@ -1,18 +1,35 @@
 import { Activity, ShieldAlert, TrendingUp, Gauge, AlertOctagon, CalendarClock, Inbox } from "lucide-react";
 import StatCard from "../components/cards/StatCard.jsx";
-import LoadingState from "../components/feedback/LoadingState.jsx";
 import ErrorState from "../components/feedback/ErrorState.jsx";
 import EmptyState from "../components/feedback/EmptyState.jsx";
+import { SkeletonStatGrid, SkeletonChart } from "../components/feedback/Skeleton.jsx";
 import RiskDistributionChart from "../charts/RiskDistributionChart.jsx";
 import PredictionsOverTimeChart from "../charts/PredictionsOverTimeChart.jsx";
 import { useDashboardStats } from "../hooks/useDashboardStats.js";
 import { formatNumber, formatPercent } from "../utils/formatters.js";
 
 export default function Dashboard() {
-  const { stats, loading, error } = useDashboardStats();
+  const { stats, loading, error, refetch } = useDashboardStats();
 
-  if (loading) return <LoadingState label="Loading dashboard…" />;
-  if (error) return <ErrorState message={error} />;
+  if (loading) {
+    return (
+      <div role="status" aria-label="Loading dashboard" className="space-y-6">
+        <span className="sr-only">Loading dashboard…</span>
+        <SkeletonStatGrid count={4} />
+        <SkeletonStatGrid count={3} />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <SkeletonChart />
+          </div>
+          <div className="lg:col-span-2">
+            <SkeletonChart />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) return <ErrorState message={error} onRetry={refetch} />;
   if (!stats) return null;
 
   const { totals, today, risk_distribution, predictions_over_time } = stats;

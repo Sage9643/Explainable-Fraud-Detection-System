@@ -4,8 +4,9 @@ import { Lightbulb, ArrowUp, ArrowDown } from "lucide-react";
 import TransactionForm from "../components/forms/TransactionForm.jsx";
 import RiskBadge from "../components/tables/RiskBadge.jsx";
 import ErrorState from "../components/feedback/ErrorState.jsx";
-import LoadingState from "../components/feedback/LoadingState.jsx";
+import { SkeletonResultCard } from "../components/feedback/Skeleton.jsx";
 import { useExplain } from "../hooks/useExplain.js";
+import { useToast } from "../context/ToastContext.jsx";
 import { formatPercent } from "../utils/formatters.js";
 
 function ContributionRow({ contribution }) {
@@ -14,9 +15,9 @@ function ContributionRow({ contribution }) {
     <div className="flex items-center justify-between border-b border-ink-50 py-2.5 last:border-b-0 dark:border-ink-800">
       <div className="flex items-center gap-2">
         {increasesRisk ? (
-          <ArrowUp size={14} className="text-risk-critical" />
+          <ArrowUp size={14} className="text-risk-critical" aria-hidden="true" />
         ) : (
-          <ArrowDown size={14} className="text-risk-low" />
+          <ArrowDown size={14} className="text-risk-low" aria-hidden="true" />
         )}
         <span className="text-sm font-medium text-ink-800 dark:text-ink-100">{contribution.feature}</span>
         <span className="text-xs text-ink-400">value = {contribution.feature_value}</span>
@@ -33,20 +34,28 @@ export default function Explainability() {
   const location = useLocation();
   const incomingTransaction = location.state?.transaction ?? null;
   const { result, loading, error, explain } = useExplain();
+  const { showToast } = useToast();
   const autoSubmitted = useRef(false);
+  const lastTransactionRef = useRef(incomingTransaction);
 
   useEffect(() => {
     if (incomingTransaction && !autoSubmitted.current) {
       autoSubmitted.current = true;
-      explain(incomingTransaction);
+      handleSubmit(incomingTransaction);
     }
     // Only auto-submit once, on arrival with a transaction handed off from
     // the Predict Transaction page - not on every re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incomingTransaction]);
 
-  function handleSubmit(transaction) {
-    explain(transaction);
+  async function handleSubmit(transaction) {
+    lastTransactionRef.current = transaction;
+    const data = await explain(transaction);
+    if (data) {
+      showToast("Explanation generated", "success");
+    } else {
+      showToast("Explanation failed. Please try again.", "error");
+    }
   }
 
   return (
@@ -54,7 +63,7 @@ export default function Explainability() {
       <div className="card p-6">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-50 text-brand-600 dark:bg-brand-700/20 dark:text-brand-400">
-            <Lightbulb size={18} />
+            <Lightbulb size={18} aria-hidden="true" />
           </div>
           <div>
             <h2 className="text-sm font-semibold text-ink-900 dark:text-ink-50">Explain a Transaction</h2>
@@ -74,9 +83,14 @@ export default function Explainability() {
         />
       </div>
 
-      {loading && <LoadingState label="Computing SHAP explanation…" />}
+      {loading && <SkeletonResultCard />}
 
-      {!loading && error && <ErrorState message={error} />}
+      {!loading && error && (
+        <ErrorState
+          message={error}
+          onRetry={() => lastTransactionRef.current && handleSubmit(lastTransactionRef.current)}
+        />
+      )}
 
       {!loading && result && (
         <div className="card p-6">

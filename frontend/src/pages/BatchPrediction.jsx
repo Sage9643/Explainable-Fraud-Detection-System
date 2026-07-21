@@ -1,13 +1,15 @@
+import { useState } from "react";
 import { UploadCloud, Rows3, ShieldAlert, TrendingUp, Timer, Download, RotateCcw } from "lucide-react";
 import CSVUploader from "../components/forms/CSVUploader.jsx";
 import StatCard from "../components/cards/StatCard.jsx";
 import DataTable from "../components/tables/DataTable.jsx";
 import RiskBadge from "../components/tables/RiskBadge.jsx";
-import LoadingState from "../components/feedback/LoadingState.jsx";
 import ErrorState from "../components/feedback/ErrorState.jsx";
+import { SkeletonStatGrid, SkeletonChart } from "../components/feedback/Skeleton.jsx";
 import RiskDistributionChart from "../charts/RiskDistributionChart.jsx";
 import { useBatchPredict } from "../hooks/useBatchPredict.js";
-import { getBatchDownloadUrl } from "../services/batchService.js";
+import { downloadBatchResults } from "../services/batchService.js";
+import { useToast } from "../context/ToastContext.jsx";
 import { formatNumber, formatPercent } from "../utils/formatters.js";
 
 const RISK_DISTRIBUTION_COLUMNS = [
@@ -17,21 +19,46 @@ const RISK_DISTRIBUTION_COLUMNS = [
 
 export default function BatchPrediction() {
   const { status, result, error, upload, reset } = useBatchPredict();
+  const { showToast } = useToast();
+  const [downloading, setDownloading] = useState(false);
 
   const isUploading = status === "uploading";
+
+  async function handleUpload(file) {
+    await upload(file);
+  }
+
+  async function handleDownload() {
+    if (!result) return;
+    setDownloading(true);
+    try {
+      await downloadBatchResults(result.batch_id);
+      showToast("Batch results exported successfully", "success");
+    } catch (err) {
+      showToast(`Export failed: ${err.message}`, "error");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
       {status !== "success" && (
         <div className="card p-6">
-          <CSVUploader onFileSelected={upload} disabled={isUploading} />
+          <CSVUploader onFileSelected={handleUpload} disabled={isUploading} />
           <p className="mt-3 text-center text-xs text-ink-500 dark:text-ink-400">
             CSV must contain columns V1 through V28 and Amount.
           </p>
         </div>
       )}
 
-      {isUploading && <LoadingState label="Scoring transactions…" />}
+      {isUploading && (
+        <div role="status" aria-label="Scoring transactions" className="space-y-4">
+          <span className="sr-only">Scoring transactions…</span>
+          <SkeletonStatGrid count={4} />
+          <SkeletonChart />
+        </div>
+      )}
 
       {status === "error" && (
         <div className="space-y-3">
@@ -40,9 +67,9 @@ export default function BatchPrediction() {
             <button
               type="button"
               onClick={reset}
-              className="flex items-center gap-1.5 rounded-md border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-50 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800"
+              className="flex items-center gap-1.5 rounded-md border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800"
             >
-              <RotateCcw size={13} /> Try Again
+              <RotateCcw size={13} aria-hidden="true" /> Try Again
             </button>
           </div>
         </div>
@@ -59,16 +86,19 @@ export default function BatchPrediction() {
               <button
                 type="button"
                 onClick={reset}
-                className="flex items-center gap-1.5 rounded-md border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-50 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800"
+                className="flex items-center gap-1.5 rounded-md border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800"
               >
-                <UploadCloud size={13} /> Upload Another
+                <UploadCloud size={13} aria-hidden="true" /> Upload Another
               </button>
-              <a
-                href={getBatchDownloadUrl(result.batch_id)}
-                className="flex items-center gap-1.5 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={downloading}
+                aria-label="Download scored results as CSV"
+                className="flex items-center gap-1.5 rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-50"
               >
-                <Download size={13} /> Download Results
-              </a>
+                <Download size={13} aria-hidden="true" /> {downloading ? "Preparing…" : "Download Results"}
+              </button>
             </div>
           </div>
 
